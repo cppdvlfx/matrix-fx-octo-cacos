@@ -5,9 +5,16 @@ extern "C"{
 }
 #include <GLFW/glfw3.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
+FT_Library ft;
+FT_Face face;
+int openFont(FT_Face* faceptr, const std::string& fontFile);
+int initFreeType(FT_Library* ftptr);
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
     glfwInit();
@@ -35,6 +42,16 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
+    if (initFreeType(&ft)){
+        glfwTerminate();
+        return -1;
+    }
+    if (openFont(&face, "MatrixCodeNfi-YPPj.otf")){
+        FT_Done_FreeType(ft);
+        glfwTerminate();
+        return -1;
+    }
+
     while (!glfwWindowShouldClose(window)){
         processInput(window);
 
@@ -47,7 +64,8 @@ int main() {
 
         glfwPollEvents();
     }
-
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
     glfwTerminate();
     return 0;
 }
@@ -58,4 +76,21 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 void processInput(GLFWwindow* window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+
+int openFont(FT_Face* face, const std::string& fontFile){
+    if (FT_New_Face(ft, fontFile.c_str(), 0, face)){
+        std::cout << "No se pudo inicializar la fuente" << std::endl;
+        return -1;
+    }
+    return 0;
+}
+int initFreeType(FT_Library* ftptr){
+    auto initFreeTypeError = FT_Init_FreeType(&ft);
+    if (initFreeTypeError){
+        std::cout << "No se pudo inicializar LibFreetype2" << std::endl;
+        return -1;
+    }
+    return 0;
 }
