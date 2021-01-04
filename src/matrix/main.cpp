@@ -1,3 +1,5 @@
+#include <map>
+#include <cctype>
 #include <iostream>
 
 extern "C"{
@@ -21,6 +23,16 @@ FT_Face face;
 int openFont(FT_Face* faceptr, const std::string& fontFile);
 int initFreeType(FT_Library* ftptr);
 int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight);
+
+
+struct glyphData{
+    unsigned int textureID;
+    glm::ivec2 bearing;
+    glm::ivec2 size;
+    unsigned int advance;
+};
+std::map<char, glyphData> c_glyphdata{};
+
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
     glfwInit();
@@ -62,6 +74,13 @@ int main() {
         FT_Done_FreeType(ft);
         glfwTerminate();
         return -1;
+    }
+    if (createGlyphTextures(&face, 48)){
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
+        glfwTerminate();
+        return -1;
+
     }
 
     while (!glfwWindowShouldClose(window)){
@@ -135,6 +154,22 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+        auto glyphchar = static_cast<char>(index);
+        std::cout << "Glyph [" << (std::isprint(glyphchar) ? glyphchar : ' ') << "][" << static_cast<unsigned int> (glyphchar) <<"]:" << std::endl;
+        auto glyph_bearing = glm::ivec2(faceptr[0]->glyph->bitmap_left, faceptr[0]->glyph->bitmap_top);
+        auto glyph____size = glm::ivec2(faceptr[0]->glyph->bitmap.width, faceptr[0]->glyph->bitmap.rows);
+        auto ______advance = static_cast<unsigned int>(faceptr[0]->glyph->advance.x);
+        std::cout << "Bearing: " << glyph_bearing.x << ", " << glyph_bearing.y << std::endl;
+        std::cout << "Size   : " << glyph____size.x << ", " << glyph____size.y << std::endl;
+        std::cout << "Advance: " << ______advance << ", hex: " << std::hex << ______advance << std::dec << std::endl;
+
+        auto glyph = glyphData{
+            texture,
+            glyph_bearing,
+            glyph____size,
+            ______advance
+        };
+        c_glyphdata[glyphchar] = glyph;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     return 0;
