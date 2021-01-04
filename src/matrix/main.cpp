@@ -33,6 +33,9 @@ struct glyphData{
 };
 std::map<char, glyphData> c_glyphdata{};
 
+glm::ivec2 screensize{1600, 900};
+glm::vec2 screensizef{1600.0f, 900.0f};
+
 unsigned int VAO, VBO;
 void createRenderingDataContainer();
 
@@ -43,7 +46,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    auto window = glfwCreateWindow(800, 600, "Demo Matrix Effect", NULL, NULL);
+    auto window = glfwCreateWindow(screensize.x, screensize.y, "Demo Matrix Effect", NULL, NULL);
     if (!window){
         std::cout << "La ventana Demo Matrix Effect, no se pudo crear... " << std::endl;
         glfwTerminate();
@@ -64,7 +67,7 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader shader("text.vs", "text.fs");
-    auto canvasprojection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
+    auto canvasprojection = glm::ortho(0.0f, screensizef.x, 0.0f, screensizef.y, -1.0f, 1.0f);
     shader.use();
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(canvasprojection));
 
@@ -72,19 +75,21 @@ int main() {
     if (initFreeType(&ft)){
         glfwTerminate();
         return -1;
-    }
+    }   
     if (openFont(&face, "MatrixCodeNfi-YPPj.otf")){
         FT_Done_FreeType(ft);
         glfwTerminate();
         return -1;
     }
-    if (createGlyphTextures(&face, 48)){
+    if (createGlyphTextures(&face, 24)){
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
         glfwTerminate();
         return -1;
 
     }
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
     
     createRenderingDataContainer();
 
@@ -95,14 +100,12 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-
+        renderText(shader, "THE CPP DEVIL -- 2021", screensizef.x * 0.5 - 120.f, screensizef.y * 0.5, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
         glfwSwapBuffers(window);
 
 
         glfwPollEvents();
     }
-    FT_Done_Face(face);
-    FT_Done_FreeType(ft);
     glfwTerminate();
     return 0;
 }
