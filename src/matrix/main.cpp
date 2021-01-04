@@ -23,7 +23,7 @@ FT_Face face;
 int openFont(FT_Face* faceptr, const std::string& fontFile);
 int initFreeType(FT_Library* ftptr);
 int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight);
-
+void renderText(Shader& shader, const std::string& messageToRender, float cx, float cy, float scale, glm::vec3 color); 
 
 struct glyphData{
     unsigned int textureID;
@@ -32,6 +32,8 @@ struct glyphData{
     unsigned int advance;
 };
 std::map<char, glyphData> c_glyphdata{};
+
+unsigned int VAO, VBO;
 
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
@@ -108,8 +110,6 @@ void processInput(GLFWwindow* window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
-
-
 int openFont(FT_Face* face, const std::string& fontFile){
     if (FT_New_Face(ft, fontFile.c_str(), 0, face)){
         std::cout << "No se pudo inicializar la fuente" << std::endl;
@@ -174,4 +174,36 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
     glBindTexture(GL_TEXTURE_2D, 0);
     return 0;
 }
+void renderText(Shader& shader, const std::string& messageToRender, float cx, float cy, float scale, glm::vec3 color){
 
+    shader.use();
+    glUniform3f(glGetUniformLocation(shader.ID, "textColor"), color.x, color.y, color.z);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO);
+    for (auto const& c : messageToRender){
+        auto glyph = c_glyphdata[c];
+        auto pos__ = glm::vec2(cx + glyph.bearing.x * scale, cy - (glyph.size.y - glyph.bearing.y) * scale);
+        auto size_ = glm::vec2(glyph.size.x , glyph.size.y) * scale;
+        float vertices [6][4] = {
+            {pos__.x,           pos__.y + size_.y,  0.0f, 0.0f},
+            {pos__.x,           pos__.y,            0.0f, 1.0f},
+            {pos__.x + size_.x, pos__.y,            1.0f, 1.0f},
+
+            {pos__.x,           pos__.y + size_.y,  0.0f, 0.0f},
+            {pos__.x + size_.x, pos__.y,            1.0f, 1.0f},
+            {pos__.x + size_.x, pos__.y + size_.y,  1.0f, 0.0f}
+        };
+        glBindTexture(GL_TEXTURE_2D, glyph.textureID);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        cx += (glyph.advance >> 6) * scale;
+
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
