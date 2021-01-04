@@ -34,6 +34,7 @@ struct glyphData{
 std::map<char, glyphData> c_glyphdata{};
 
 unsigned int VAO, VBO;
+void createRenderingDataContainer();
 
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
@@ -84,6 +85,9 @@ int main() {
         return -1;
 
     }
+    
+    createRenderingDataContainer();
+
 
     while (!glfwWindowShouldClose(window)){
         processInput(window);
@@ -206,4 +210,15 @@ void renderText(Shader& shader, const std::string& messageToRender, float cx, fl
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+}
+void createRenderingDataContainer(){
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
