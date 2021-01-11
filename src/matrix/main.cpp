@@ -210,7 +210,7 @@ void renderText(Shader& shader, const std::string& messageToRender, float cx, fl
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        cx += (glyph.advance >> 6) * scale;
+        cy += (glyph.size.y + (glyph.advance >> 6) - glyph.size.x) * scale;
 
     }
     glBindVertexArray(0);
