@@ -32,6 +32,7 @@ struct glyphData{
     unsigned int advance;
 };
 std::map<char, glyphData> c_glyphdata{};
+int maxheight{0};
 
 glm::ivec2 screensize{1600, 900};
 glm::vec2 screensizef{1600.0f, 900.0f};
@@ -102,17 +103,29 @@ int main() {
     std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
     auto randomColumn = 1.0f * uniformDistribution(rd);
 
+    auto framesPerSecond = 60.0f;
+    auto trackSpeed = -1.0f * maxheight / framesPerSecond;//Character height per frame
+    auto periodPerFrame = 1.0f / framesPerSecond;
+    auto tNow = glfwGetTime();
+    auto tNextFrame = tNow + periodPerFrame;
+    auto yCoordinate = screensizef.y * 1.0f;
+
     while (!glfwWindowShouldClose(window)){
+
+        while (tNow >= tNextFrame){
+            tNextFrame += periodPerFrame;
+            yCoordinate += trackSpeed;
+        }
         processInput(window);
 
         glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        renderText(shader, messagetorender, randomColumn - stringwidth, 0.0f, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        renderText(shader, messagetorender, randomColumn - stringwidth, yCoordinate, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
         glfwSwapBuffers(window);
-
-
         glfwPollEvents();
+
+        tNow = glfwGetTime();
     }
     glfwTerminate();
     return 0;
@@ -178,6 +191,7 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
         std::cout << "Size   : " << glyph____size.x << ", " << glyph____size.y << std::endl;
         std::cout << "Advance: " << ______advance << ", hex: " << std::hex << ______advance << std::dec << std::endl;
 
+        if (glyph____size.y > maxheight) maxheight = glyph____size.y;
         auto glyph = glyphData{
             texture,
             glyph_bearing,
