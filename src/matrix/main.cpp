@@ -38,7 +38,7 @@ glm::vec2 screensizef{1600.0f, 900.0f};
 unsigned int VAO, VBO;
 void createRenderingDataContainer();
 
-float calcxcentered(const std::string&message, float scale);
+float calcstringtrackwidth(const std::string&message, float scale);
 
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
@@ -95,7 +95,7 @@ int main() {
     createRenderingDataContainer();
 
     auto messagetorender = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
-    auto cx = calcxcentered(messagetorender, 1.0);
+    auto stringwidth = calcstringtrackwidth(messagetorender, 1.0);
 
     while (!glfwWindowShouldClose(window)){
         processInput(window);
@@ -103,7 +103,7 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        renderText(shader, messagetorender, cx, screensizef.y * 0.5, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        renderText(shader, messagetorender, 800.f - stringwidth, 0.0f, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
         glfwSwapBuffers(window);
 
 
@@ -228,11 +228,15 @@ void createRenderingDataContainer(){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
-float calcxcentered(const std::string& messageToRender, float scale){
+float calcstringtrackwidth(const std::string& messageToRender, float scale){
     float cx = 0.0f;
+    float max = 0.0f;
     for (auto const& c : messageToRender){
         auto glyph = c_glyphdata[c];
-        cx += (glyph.advance >> 6) * scale;
+        auto adv = (glyph.advance >> 6) * scale;
+        if (adv > max){
+            max = adv;
+        }
     }
-    return 0.5f * (screensizef.x - cx);    
+    return 0.5f * max;
 }
