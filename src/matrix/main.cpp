@@ -1,5 +1,6 @@
 #include <map>
 #include <cctype>
+#include <random>
 #include <iostream>
 
 extern "C"{
@@ -97,13 +98,17 @@ int main() {
     auto messagetorender = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
     auto stringwidth = calcstringtrackwidth(messagetorender, 1.0);
 
+    std::random_device rd;
+    std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
+    auto randomColumn = 1.0f * uniformDistribution(rd);
+
     while (!glfwWindowShouldClose(window)){
         processInput(window);
 
         glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        renderText(shader, messagetorender, 800.f - stringwidth, 0.0f, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        renderText(shader, messagetorender, randomColumn - stringwidth, 0.0f, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
         glfwSwapBuffers(window);
 
 
