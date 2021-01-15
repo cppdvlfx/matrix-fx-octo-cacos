@@ -65,6 +65,10 @@ struct TrackData {
     {
         for (auto index = 0u; index < mTracks; ++index){
             mTrackPosition[index] += mTrackSpeed[index];
+            if (mTrackPosition[index].y < -mTrackSize[index].y){
+                mTrackPosition[index].y = screensizef.y;
+
+            }
         }
     }
     void addTrack(const std::string messagetorender){
@@ -81,7 +85,7 @@ struct TrackData {
         auto stringheight = calcstringtrackheight(messagetorender, 1.0f);
         mTrackSize.push_back(glm::vec2(stringwidth, stringheight));
 
-        auto trackSpeed = -1.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
+        auto trackSpeed = -5.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
         mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
 
         ++mTracks;
