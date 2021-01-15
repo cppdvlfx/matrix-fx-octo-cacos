@@ -25,13 +25,13 @@ int openFont(FT_Face* faceptr, const std::string& fontFile);
 int initFreeType(FT_Library* ftptr);
 int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight);
 void renderText(Shader& shader, const std::string& messageToRender, float cx, float cy, float scale, glm::vec3 color); 
-struct glyphData{
+struct GlyphData{
     unsigned int textureID;
     glm::ivec2 bearing;
     glm::ivec2 size;
     unsigned int advance;
 };
-std::map<char, glyphData> c_glyphdata{};
+std::map<char, GlyphData> c_glyphdata{};
 int maxheight{0};
 
 glm::ivec2 screensize{1600, 900};
@@ -192,7 +192,7 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
         std::cout << "Advance: " << ______advance << ", hex: " << std::hex << ______advance << std::dec << std::endl;
 
         if (glyph____size.y > maxheight) maxheight = glyph____size.y;
-        auto glyph = glyphData{
+        auto glyph = GlyphData{
             texture,
             glyph_bearing,
             glyph____size,
