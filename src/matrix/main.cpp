@@ -1,6 +1,7 @@
 #include <map>
 #include <cctype>
 #include <random>
+#include <vector>
 #include <iostream>
 
 extern "C"{
@@ -41,6 +42,52 @@ unsigned int VAO, VBO;
 void createRenderingDataContainer();
 
 float calcstringtrackwidth(const std::string&message, float scale);
+float calcstringtrackheight(const std::string& message, float scale);
+
+struct TimeData {
+    static constexpr float framesPerSecond = 60.0f;
+    static constexpr float periodPerFrame = 1.0f / framesPerSecond;
+};
+
+struct TrackData {
+    unsigned int mTracks{0};
+    std::vector<glm::ivec2> mTrackSize{};
+    std::vector<glm::vec2> mTrackPosition{};
+    std::vector<glm::vec2> mTrackSpeed{};
+    std::vector<std::string> mMessageToRender{};
+    void renderTracks(Shader& shader)
+    {
+        for (auto index = 0u; index < mTracks; ++index){
+            renderText(shader, mMessageToRender[index], mTrackPosition[index].x - (mTrackSize[index].x * 1.0f) * 0.5f, mTrackPosition[index].y,  1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        }
+    }
+    void updatePositions()
+    {
+        for (auto index = 0u; index < mTracks; ++index){
+            mTrackPosition[index] += mTrackSpeed[index];
+        }
+    }
+    void addTrack(const std::string messagetorender){
+
+
+        mMessageToRender.push_back(messagetorender);//  = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
+
+        std::random_device rd;
+        std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
+        auto randomColumn = 1.0f * uniformDistribution(rd);
+        mTrackPosition.push_back(glm::vec2(randomColumn, 450.f));
+
+        auto stringwidth = calcstringtrackwidth(messagetorender, 1.0f);
+        auto stringheight = calcstringtrackheight(messagetorender, 1.0f);
+        mTrackSize.push_back(glm::vec2(stringwidth, stringheight));
+
+        auto trackSpeed = -1.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
+        mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
+
+        ++mTracks;
+    }
+};
+
 
 int main() {
     std::cout << "Demo Matrix Effect" << std::endl;
@@ -96,32 +143,25 @@ int main() {
     
     createRenderingDataContainer();
 
-    auto messagetorender = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
-    auto stringwidth = calcstringtrackwidth(messagetorender, 1.0);
 
-    std::random_device rd;
-    std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
-    auto randomColumn = 1.0f * uniformDistribution(rd);
+    TrackData trackData;
+    trackData.addTrack("THE CPP DEVIL -- 2021 -- the cpp devil -- 2021");
 
-    auto framesPerSecond = 60.0f;
-    auto trackSpeed = -1.0f * maxheight / framesPerSecond;//Character height per frame
-    auto periodPerFrame = 1.0f / framesPerSecond;
     auto tNow = glfwGetTime();
-    auto tNextFrame = tNow + periodPerFrame;
-    auto yCoordinate = screensizef.y * 1.0f;
+    auto tNextFrame = tNow + TimeData::periodPerFrame;
 
     while (!glfwWindowShouldClose(window)){
 
         while (tNow >= tNextFrame){
-            tNextFrame += periodPerFrame;
-            yCoordinate += trackSpeed;
+            tNextFrame += TimeData::periodPerFrame;
+            trackData.updatePositions();
         }
         processInput(window);
 
         glClearColor(0.0f, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        renderText(shader, messagetorender, randomColumn - stringwidth, yCoordinate, 1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        trackData.renderTracks(shader);
         glfwSwapBuffers(window);
         glfwPollEvents();
 
@@ -258,4 +298,14 @@ float calcstringtrackwidth(const std::string& messageToRender, float scale){
         }
     }
     return 0.5f * max;
+}
+
+float calcstringtrackheight(const std::string& messageToRender, float scale){
+    float cx = 0.0f;
+    float acc = 0.0f;
+    for (auto const& c : messageToRender){
+        auto glyph = c_glyphdata[c];
+        acc += (glyph.size.y + (glyph.advance >> 6) - glyph.size.x) * scale;
+    }
+    return acc;
 }
