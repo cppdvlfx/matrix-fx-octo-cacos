@@ -67,6 +67,7 @@ struct TrackData {
             mTrackPosition[index] += mTrackSpeed[index];
             if (mTrackPosition[index].y < -mTrackSize[index].y){
                 mTrackPosition[index].y = screensizef.y;
+                mTrackPosition[index].x = getRandomColumn();
 
             }
         }
@@ -76,9 +77,7 @@ struct TrackData {
 
         mMessageToRender.push_back(messagetorender);//  = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
 
-        std::random_device rd;
-        std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
-        auto randomColumn = 1.0f * uniformDistribution(rd);
+        auto randomColumn = getRandomColumn();
         mTrackPosition.push_back(glm::vec2(randomColumn, 450.f));
 
         auto stringwidth = calcstringtrackwidth(messagetorender, 1.0f);
@@ -89,6 +88,14 @@ struct TrackData {
         mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
 
         ++mTracks;
+    }
+private:
+    float getRandomColumn(){
+        std::random_device rd;
+        std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
+        auto randomColumn = 1.0f * uniformDistribution(rd);
+        return randomColumn;
+
     }
 };
 
