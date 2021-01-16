@@ -64,27 +64,30 @@ struct TrackData {
     void updatePositions()
     {
         for (auto index = 0u; index < mTracks; ++index){
+            auto lastPosition = mTrackPosition[index];
             mTrackPosition[index] += mTrackSpeed[index];
             if (mTrackPosition[index].y < -mTrackSize[index].y){
                 mTrackPosition[index].y = screensizef.y;
                 mTrackPosition[index].x = getRandomColumn();
-
+            }
+            if (lastPosition.y > 0.0f && mTrackPosition[index].y <= 0.0f){
+                addTrack("this is a random message.");
             }
         }
     }
     void addTrack(const std::string messagetorender){
 
-
+        if (mMessageToRender.size()>256) return;
         mMessageToRender.push_back(messagetorender);//  = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
 
         auto randomColumn = getRandomColumn();
-        mTrackPosition.push_back(glm::vec2(randomColumn, 450.f));
+        mTrackPosition.push_back(glm::vec2(randomColumn, screensizef.y));
 
         auto stringwidth = calcstringtrackwidth(messagetorender, 1.0f);
         auto stringheight = calcstringtrackheight(messagetorender, 1.0f);
         mTrackSize.push_back(glm::vec2(stringwidth, stringheight));
 
-        auto trackSpeed = -5.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
+        auto trackSpeed = -12.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
         mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
 
         ++mTracks;
@@ -142,7 +145,7 @@ int main() {
         glfwTerminate();
         return -1;
     }
-    if (createGlyphTextures(&face, 24)){
+    if (createGlyphTextures(&face, 16)){
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
         glfwTerminate();
