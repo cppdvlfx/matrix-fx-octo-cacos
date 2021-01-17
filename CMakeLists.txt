@@ -13,11 +13,12 @@ include(cmake/ExternalProjects.cmake)
 
 
 add_executable(matrix_fx src/matrix/main.cpp src/glad/glad.c)
-add_dependencies(matrix_fx glfw glm learnopengl)
+add_dependencies(matrix_fx cpr glfw glm learnopengl)
 
 target_include_directories(matrix_fx PRIVATE
         include
 
+        ${cpr_INCLUDE_DIR}
         ${glm_INCLUDE_DIR}
         ${glfw_INCLUDE_DIR}
         ${freetype2_INCLUDE_DIR}
@@ -28,7 +29,9 @@ target_link_libraries(matrix_fx PRIVATE
         ${glfw_LIBRARY_DIR}/libglfw3.a
 
 
+        ${CMAKE_BINARY_DIR}/lib/libcpr-d.a
         #system
+        -lcurl
         -lassimp
         -lharfbuzz
         -lfreetype

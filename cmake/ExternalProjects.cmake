@@ -17,6 +17,20 @@ if(NOT json_POPULATED)
 endif()
 
 message (STATUS "-----------------------------------------------------------------------")
+message (STATUS "WHOSHUU CPR -----------------------------------------------------------")
+FetchContent_Declare(
+        cpr
+        GIT_REPOSITORY https://github.com/cppdvl/cpr.git
+        GIT_TAG v.1.5.1.dvl.1
+)
+FetchContent_GetProperties(cpr)
+if(NOT cpr_POPULATED)
+    FetchContent_Populate(cpr)
+    add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+set(cpr_INCLUDE_DIR ${cpr_SOURCE_DIR}/include)
+
+message (STATUS "-----------------------------------------------------------------------")
 message (STATUS "GLFW ------------------------------------------------------------------")
 
 set(GLFW_NAME glfw)
