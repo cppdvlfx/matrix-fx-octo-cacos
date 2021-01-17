@@ -4,6 +4,7 @@
 #include <random>
 #include <vector>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 extern "C"{
 #include <glad/glad.h>
@@ -72,25 +73,27 @@ struct TrackData {
                 mTrackPosition[index].x = getRandomColumn();
             }
             if (lastPosition.y > 0.0f && mTrackPosition[index].y <= 0.0f){
-                addTrack("this is a random message.");
+                addTrack();
             }
         }
     }
-    void addTrack(const std::string messagetorender){
+    void addTrack(){
 
-        if (mMessageToRender.size()>256) return;
+        if (mTracks==256) return;
+        auto messagetorender = std::string{"ERROR DOING THE API CALL"};
+        cpr::Response r = cpr::Get(cpr::Url{"https://random-data-api.com/api/name/random_name"});
+        if (r.status_code == 200){
+            auto j = nlohmann::json::parse(r.text);
+            messagetorender = j["uid"];
+        }
         mMessageToRender.push_back(messagetorender);//  = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
-
         auto randomColumn = getRandomColumn();
         mTrackPosition.push_back(glm::vec2(randomColumn, screensizef.y));
-
         auto stringwidth = calcstringtrackwidth(messagetorender, 1.0f);
         auto stringheight = calcstringtrackheight(messagetorender, 1.0f);
         mTrackSize.push_back(glm::vec2(stringwidth, stringheight));
-
         auto trackSpeed = -12.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
         mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
-
         ++mTracks;
     }
 private:
@@ -155,12 +158,11 @@ int main() {
     }
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-    
     createRenderingDataContainer();
 
 
     TrackData trackData;
-    trackData.addTrack("THE CPP DEVIL -- 2021 -- the cpp devil -- 2021");
+    trackData.addTrack();
 
     auto tNow = glfwGetTime();
     auto tNextFrame = tNow + TimeData::periodPerFrame;
