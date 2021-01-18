@@ -5,7 +5,7 @@ include(FetchContent)
 include(ExternalProject)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE DEBUG)
+#set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 # -- 3rd party dependencies --
@@ -29,7 +29,7 @@ target_link_libraries(matrix_fx PRIVATE
         ${glfw_LIBRARY_DIR}/libglfw3.a
 
 
-        ${CMAKE_BINARY_DIR}/lib/libcpr-d.a
+        ${CMAKE_BINARY_DIR}/lib/libcpr.a
         #system
         -lcurl
         -lassimp
@@ -43,7 +43,7 @@ target_link_libraries(matrix_fx PRIVATE
 
         )
 
-
+message(STATUS ${CMAKE_BINARY_DIR}/lib/libcpr.a)
 add_custom_command(
         TARGET matrix_fx
         POST_BUILD

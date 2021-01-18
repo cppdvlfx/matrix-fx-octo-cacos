@@ -1,10 +1,10 @@
 #include <map>
-#include <cpr/cpr.h>
-#include <cctype>
+#include <mutex>
 #include <random>
+#include <thread>
 #include <vector>
 #include <iostream>
-#include <nlohmann/json.hpp>
+#include <cpr/cpr.h>
 
 extern "C"{
 #include <glad/glad.h>
@@ -27,7 +27,7 @@ FT_Face face;
 int openFont(FT_Face* faceptr, const std::string& fontFile);
 int initFreeType(FT_Library* ftptr);
 int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight);
-void renderText(Shader& shader, const std::string& messageToRender, float cx, float cy, float scale, glm::vec3 color); 
+void renderText(Shader& shader, const std::string messageToRender, float cx, float cy, float scale, glm::vec3 color);
 struct GlyphData{
     unsigned int textureID;
     glm::ivec2 bearing;
@@ -51,8 +51,18 @@ struct TimeData {
     static constexpr float periodPerFrame = 1.0f / framesPerSecond;
 };
 
+
 struct TrackData {
+    cpr::Url mUrl{"https://random-data-api.com/api/name/random_name"};
+    std::random_device mRandomDevice;
+    std::mt19937_64 mMersenneTwisterEngine{mRandomDevice()};
     unsigned int mTracks{0};
+    const int mMaxTracks{32};
+
+    int64_t mPendingTextTrack{0u};
+    std::thread mThread;
+    std::once_flag mCallOnceFlag;
+
     std::vector<glm::ivec2> mTrackSize{};
     std::vector<glm::vec2> mTrackPosition{};
     std::vector<glm::vec2> mTrackSpeed{};
@@ -61,6 +71,11 @@ struct TrackData {
     {
         for (auto index = 0u; index < mTracks; ++index){
             renderText(shader, mMessageToRender[index], mTrackPosition[index].x - (mTrackSize[index].x * 1.0f) * 0.5f, mTrackPosition[index].y,  1.0f, glm::vec3(0.3f, 0.3f, 0.9f));
+        }
+    }
+    void updateSpeeds() {
+        for (auto index = 0u; index < mTracks; ++index) {
+            mTrackSpeed[index].y = (-7.2f - mTracks * 0.3375f) * maxheight / TimeData::framesPerSecond;
         }
     }
     void updatePositions()
@@ -79,28 +94,40 @@ struct TrackData {
     }
     void addTrack(){
 
-        if (mTracks==256) return;
-        auto messagetorender = std::string{"ERROR DOING THE API CALL"};
-        cpr::Response r = cpr::Get(cpr::Url{"https://random-data-api.com/api/name/random_name"});
-        if (r.status_code == 200){
-            auto j = nlohmann::json::parse(r.text);
-            messagetorender = j["uid"];
-        }
-        mMessageToRender.push_back(messagetorender);//  = "THE CPP DEVIL -- 2021 -- the cpp devil -- 2021";
-        auto randomColumn = getRandomColumn();
-        mTrackPosition.push_back(glm::vec2(randomColumn, screensizef.y));
-        auto stringwidth = calcstringtrackwidth(messagetorender, 1.0f);
-        auto stringheight = calcstringtrackheight(messagetorender, 1.0f);
-        mTrackSize.push_back(glm::vec2(stringwidth, stringheight));
-        auto trackSpeed = -12.0f * maxheight / TimeData::framesPerSecond; // 1 Character height per frame = 1.0  x MAXHEIGHT / FRAME
-        mTrackSpeed.push_back(glm::vec2(0.0f, trackSpeed));
-        ++mTracks;
+        if (mTracks>=mMaxTracks) return;
+        mPendingTextTrack++;
+        std::call_once(mCallOnceFlag, [&](){
+            mThread = std::thread([&](){
+                while (true){
+                    while (mPendingTextTrack){
+                        mPendingTextTrack--;
+                        auto response = cpr::Get(mUrl);
+                        auto messagetorender = response.status_code == 200 ? response.text : std::string{"ERROR DOING THE API CALL"};
+                        std::stringstream ss;
+                        mMessageToRender.emplace_back(ss.str() + messagetorender);
+                        mTrackPosition.emplace_back(getRandomColumn(), screensizef.y);
+                        mTrackSize.emplace_back(calcstringtrackwidth(messagetorender, 1.0f), calcstringtrackheight(messagetorender, 1.0f));
+                        mTrackSpeed.emplace_back(0.0f, 0.0f);
+                        ++mTracks;
+                        updateSpeeds();
+                        std::cout << mTracks << std::endl;
+                    }
+                }
+            });
+            mThread.detach();
+        });
+
     }
 private:
     float getRandomColumn(){
-        std::random_device rd;
+        static float col = 0.0f;
+        col += 16.0f;
+        if (col > 1600.0f){
+            col = 0.0f;
+        }
+
         std::uniform_int_distribution<int> uniformDistribution(0, screensize.x - 1);
-        auto randomColumn = 1.0f * uniformDistribution(rd);
+        auto randomColumn = 1.0f * uniformDistribution(mMersenneTwisterEngine);
         return randomColumn;
 
     }
@@ -108,6 +135,7 @@ private:
 
 
 int main() {
+    //std::signal(SIGSEGV, TrackData::trackDataSigHandler);
     std::cout << "Demo Matrix Effect" << std::endl;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -120,7 +148,7 @@ int main() {
         glfwTerminate();
         return -1; 
     }
-
+    glfwSetWindowPos(window, 0, 0);
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -240,13 +268,13 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         auto glyphchar = static_cast<char>(index);
-        std::cout << "Glyph [" << (std::isprint(glyphchar) ? glyphchar : ' ') << "][" << static_cast<unsigned int> (glyphchar) <<"]:" << std::endl;
+        //std::cout << "Glyph [" << (std::isprint(glyphchar) ? glyphchar : ' ') << "][" << static_cast<unsigned int> (glyphchar) <<"]:" << std::endl;
         auto glyph_bearing = glm::ivec2(faceptr[0]->glyph->bitmap_left, faceptr[0]->glyph->bitmap_top);
         auto glyph____size = glm::ivec2(faceptr[0]->glyph->bitmap.width, faceptr[0]->glyph->bitmap.rows);
         auto ______advance = static_cast<unsigned int>(faceptr[0]->glyph->advance.x);
-        std::cout << "Bearing: " << glyph_bearing.x << ", " << glyph_bearing.y << std::endl;
+        /*std::cout << "Bearing: " << glyph_bearing.x << ", " << glyph_bearing.y << std::endl;
         std::cout << "Size   : " << glyph____size.x << ", " << glyph____size.y << std::endl;
-        std::cout << "Advance: " << ______advance << ", hex: " << std::hex << ______advance << std::dec << std::endl;
+        std::cout << "Advance: " << ______advance << ", hex: " << std::hex << ______advance << std::dec << std::endl;*/
 
         if (glyph____size.y > maxheight) maxheight = glyph____size.y;
         auto glyph = GlyphData{
@@ -260,13 +288,13 @@ int createGlyphTextures(FT_Face* faceptr, unsigned long pixelHeight){
     glBindTexture(GL_TEXTURE_2D, 0);
     return 0;
 }
-void renderText(Shader& shader, const std::string& messageToRender, float cx, float cy, float scale, glm::vec3 color){
+void renderText(Shader& shader, const std::string messageToRender, float cx, float cy, float scale, glm::vec3 color){
 
     shader.use();
     glUniform3f(glGetUniformLocation(shader.ID, "textColor"), color.x, color.y, color.z);
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO);
-    for (auto const& c : messageToRender){
+    for (auto c : messageToRender){
         auto glyph = c_glyphdata[c];
         auto pos__ = glm::vec2(cx + glyph.bearing.x * scale, cy - (glyph.size.y - glyph.bearing.y) * scale);
         auto size_ = glm::vec2(glyph.size.x , glyph.size.y) * scale;
